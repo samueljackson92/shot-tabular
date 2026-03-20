@@ -3,6 +3,7 @@ import argparse
 import multiprocessing as mp
 from typing import Literal
 from functools import partial
+from pathlib import Path
 
 import xarray as xr
 import pandas as pd
@@ -21,8 +22,12 @@ class TimeSettings(BaseModel):
 
 
 def process_signal(
-    shot: int, signals: dict[str, str], transport: str, time_settings: TimeSettings
-) -> pd.DataFrame | str:
+    shot: int,
+    signals: dict[str, str],
+    transport: str,
+    output_file: Path,
+    time_settings: TimeSettings,
+) -> tuple[int, str]:
     variables = {}
     for alias, signal in signals.items():
         try:
@@ -48,14 +53,24 @@ def process_signal(
         variables[alias] = pd.Series(variable.values, name=alias, index=time_base)
 
     if len(variables) == 0:
-        return f"No valid signals found for shot {shot}"
+        return shot, f"No valid signals found for shot {shot}"
 
     df = pd.DataFrame(variables)
+    cols = df.columns.tolist()
+
+    for alias in signals.keys():
+        if alias not in cols:
+            df[alias] = np.nan  # Add missing signal as NaN column
+
     df["time"] = np.arange(len(df)) * time_settings.dt + time_settings.tmin
     df["shot"] = shot
     df.index.name = "index"
-    df = df[["shot", "time"] + list(signals.keys())]  # Reorder columns
-    return df
+    df = df[["shot", "time"] + cols]  # Reorder columns
+    df = df.sort_values(["shot", "time"])  # Sort by shot and time
+    df.to_parquet(
+        output_file / f"{shot}.parquet"
+    )  # Save individual shot data as Parquet
+    return shot, ""
 
 
 class StoreKeyValue(argparse.Action):
@@ -92,7 +107,7 @@ def main():
         "-o",
         "--output-file",
         type=str,
-        default="out.csv",
+        default="output",
         help="Output file path",
     )
     parser.add_argument(
@@ -123,7 +138,7 @@ def main():
     if args.shots:
         shots = args.shots
     elif args.shot_file:
-        shots = pd.read_csv(args.shot_file, header=None).iloc[:, 0].tolist()
+        shots = pd.read_csv(args.shot_file).iloc[:, 0].astype(int).tolist()
     elif args.shot_min is not None and args.shot_max is not None:
         shots = list(range(args.shot_min, args.shot_max + 1))
     else:
@@ -132,36 +147,31 @@ def main():
         )
         sys.exit(1)
 
+    output_file = Path(args.output_file)
+    output_file.mkdir(parents=True, exist_ok=True)
+
     signals = args.signals
     time_settings = TimeSettings(
         tmin=args.tmin, tmax=args.tmax, dt=args.dt, method=args.method
     )
 
-    results = []
     with mp.Pool(args.num_workers) as pool:
         jobs = pool.imap_unordered(
             partial(
                 process_signal,
                 signals=signals,
                 transport=args.transport,
+                output_file=output_file,
                 time_settings=time_settings,
             ),
             shots,
         )
 
-        for result in jobs:
-            if isinstance(result, str):
-                logger.error(result)
+        for shot, message in jobs:
+            if message:
+                logger.error(message)
             else:
-                logger.info(f"Processed shot {result['shot'].iloc[0]}")
-                results.append(result)
-
-    final_df = pd.concat(results, ignore_index=True)
-    final_df = final_df.sort_values(["shot", "time"])
-    if args.output_file.endswith(".parquet"):
-        final_df.to_parquet(args.output_file)
-    else:
-        final_df.to_csv(args.output_file)
+                logger.info(f"Processed shot {shot}")
 
     logger.info(f"Saved results to {args.output_file}")
 
