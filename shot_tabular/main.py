@@ -70,6 +70,7 @@ def process_signal(
     df.index.name = "index"
     df = df[["shot", "time"] + list(signals.keys())]  # Reorder columns
     df = df.sort_values(["shot", "time"])  # Sort by shot and time
+    df = df.set_index("time")
 
     schema = pa.schema(
         [
