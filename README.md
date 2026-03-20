@@ -1,15 +1,15 @@
 # shot-tabular
 
-`shot-tabular` is a command-line tool for building tabular datasets from shot-based time series signals.
+`shot-tabular` is a command-line tool for building per-shot tabular datasets from shot-based time series signals.
 
-It loads one or more signals for each shot, interpolates them onto a shared time base, and writes a single combined table to CSV or Parquet.
+It loads one or more signals for each shot, interpolates them onto a shared time base, and writes one Parquet file per shot.
 
 ## Features
 
 - Load multiple signals per shot using `uda` or `sal` transport
 - Interpolate each signal to a common time grid
 - Process many shots in parallel with multiprocessing
-- Export the merged result to CSV (`.csv`) or Parquet (`.parquet`)
+- Save one output file per shot as Parquet (`<output-dir>/<shot>.parquet`)
 
 ## Installation
 
@@ -60,7 +60,7 @@ st \
 	--tmax 5.0 \
 	--dt 0.01 \
 	--method nearest \
-	--output-file out.csv
+	--output-file output
 ```
 
 ### Shot Range Example
@@ -70,18 +70,22 @@ st \
 	--shot-min 12000 \
 	--shot-max 12010 \
 	-s ip \
-	-o out.parquet
+	-o output
 ```
 
 ## Output Format
 
-The output includes:
+Each successfully processed shot is written to:
+
+- `<output-dir>/<shot>.parquet`
+
+Each per-shot table includes:
 
 - `shot`: shot number
 - `time`: generated time base from `tmin`, `tmax`, and `dt`
 - one column per signal alias
 
-Rows from all shots are concatenated into a single table.
+Columns are ordered as `shot`, `time`, then the successfully loaded signal columns.
 
 ## Main Options
 
@@ -90,7 +94,7 @@ Rows from all shots are concatenated into a single table.
 - `--shot-min`, `--shot-max`: inclusive shot range
 - `-s`: signal mapping(s), repeatable
 - `--transport`: `uda` or `sal` (default: `uda`)
-- `-o`, `--output-file`: output path (default: `out.csv`)
+- `-o`, `--output-file`: output directory path (default: `output`)
 - `-n`, `--num-workers`: worker process count (default: CPU count)
 - `--tmin`: start time (default: `0.0`)
 - `--tmax`: end time (default: signal max time)
@@ -100,4 +104,5 @@ Rows from all shots are concatenated into a single table.
 ## Notes
 
 - If an individual signal fails to load for a shot, processing continues and the error is printed.
-- CSV is used unless `--output-file` ends with `.parquet`.
+- Output is currently Parquet-only.
+- If all signals fail for a shot, no file is written for that shot.

@@ -5,6 +5,8 @@ from typing import Literal
 from functools import partial
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -61,15 +63,24 @@ def process_signal(
     for alias in signals.keys():
         if alias not in cols:
             df[alias] = np.nan  # Add missing signal as NaN column
+            df[alias] = df[alias].astype("float64")
 
     df["time"] = np.arange(len(df)) * time_settings.dt + time_settings.tmin
     df["shot"] = shot
     df.index.name = "index"
-    df = df[["shot", "time"] + cols]  # Reorder columns
+    df = df[["shot", "time"] + list(signals.keys())]  # Reorder columns
     df = df.sort_values(["shot", "time"])  # Sort by shot and time
-    df.to_parquet(
-        output_file / f"{shot}.parquet"
-    )  # Save individual shot data as Parquet
+
+    schema = pa.schema(
+        [
+            pa.field("shot", pa.int32()),
+            pa.field("time", pa.float64()),
+        ]
+        + [pa.field(alias, pa.float64()) for alias in signals.keys()]
+    )
+
+    table = pa.Table.from_pandas(df, schema=schema)
+    pq.write_table(table, output_file / f"{shot}.parquet")
     return shot, ""
 
 
