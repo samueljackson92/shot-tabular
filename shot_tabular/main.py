@@ -7,8 +7,8 @@ from functools import partial
 import xarray as xr
 import pandas as pd
 import numpy as np
-from rich.console import Console
 from pydantic import BaseModel
+from loguru import logger
 
 
 class TimeSettings(BaseModel):
@@ -28,11 +28,11 @@ def process_signal(
         try:
             ds = xr.open_dataset(f"{transport}://{signal}:{shot}")
         except Exception as e:
-            print(f"Error loading signal {signal} for shot {shot}: {e}")
+            logger.error(f"Error loading signal {signal} for shot {shot}: {e}")
             continue
 
         if "data" not in ds or "time" not in ds:
-            print(
+            logger.error(
                 f"Signal {signal} for shot {shot} is missing 'data' or 'time' variables"
             )
             continue
@@ -50,7 +50,7 @@ def process_signal(
     if len(variables) == 0:
         return f"No valid signals found for shot {shot}"
 
-    df = pd.merge(*variables.values(), left_index=True, right_index=True, how="outer")
+    df = pd.DataFrame(variables)
     df["time"] = np.arange(len(df)) * time_settings.dt + time_settings.tmin
     df["shot"] = shot
     df.index.name = "index"
@@ -119,7 +119,6 @@ def main():
         help="Interpolation method for time alignment",
     )
     args = parser.parse_args()
-    console = Console()
 
     if args.shots:
         shots = args.shots
@@ -128,8 +127,8 @@ def main():
     elif args.shot_min is not None and args.shot_max is not None:
         shots = list(range(args.shot_min, args.shot_max + 1))
     else:
-        console.print(
-            "[red]Error: You must specify either --shots, --shot-file, or both --shot-min and --shot-max[/red]"
+        logger.error(
+            "Error: You must specify either --shots, --shot-file, or both --shot-min and --shot-max"
         )
         sys.exit(1)
 
@@ -152,9 +151,9 @@ def main():
 
         for result in jobs:
             if isinstance(result, str):
-                console.print(f"[red]{result}[/red]")
+                logger.error(result)
             else:
-                console.print(f"Processed shot {result['shot'].iloc[0]}")
+                logger.info(f"Processed shot {result['shot'].iloc[0]}")
                 results.append(result)
 
     final_df = pd.concat(results, ignore_index=True)
@@ -164,7 +163,7 @@ def main():
     else:
         final_df.to_csv(args.output_file)
 
-    console.print(f"Saved results to {args.output_file}")
+    logger.info(f"Saved results to {args.output_file}")
 
 
 if __name__ == "__main__":
