@@ -159,7 +159,7 @@ def main():
         )
         sys.exit(1)
 
-    output_file = Path(args.output_file)
+    output_file = Path(args.output_file).expanduser().resolve()
     output_file.mkdir(parents=True, exist_ok=True)
 
     signals = args.signals
