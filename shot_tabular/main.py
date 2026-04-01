@@ -151,7 +151,10 @@ def main():
         shots = args.shots
     elif args.shot_file:
         shot_file_path = Path(args.shot_file).expanduser().resolve()
-        shots = pd.read_csv(shot_file_path).iloc[:, 0].astype(int).tolist()
+        if shot_file_path.suffix == ".csv":
+            shots = pd.read_csv(shot_file_path).iloc[:, 0].astype(int).tolist()
+        elif shot_file_path.suffix == ".parquet":
+            shots = pd.read_parquet(shot_file_path).index.values.astype(int).tolist()
     elif args.shot_min is not None and args.shot_max is not None:
         shots = list(range(args.shot_min, args.shot_max + 1))
     else:
