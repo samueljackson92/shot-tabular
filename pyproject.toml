@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "loguru>=0.7.3",
+    "rich>=13.0.0",
     "pandas>=2.3.3",
     "pyarrow>=23.0.1",
     "pydantic>=2.12.5",
@@ -14,3 +14,13 @@ dependencies = [
 ]
 [project.scripts]
 st = "shot_tabular.main:main"
+
+[tool.setuptools]
+packages = ["shot_tabular"]
+
+[dependency-groups]
+dev = [
+    "pylint>=4.0.5",
+    "ruff>=0.15.12",
+    "ty>=0.0.32",
+]
