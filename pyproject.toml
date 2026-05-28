@@ -16,6 +16,10 @@ dependencies = [
 [project.scripts]
 st = "shot_tabular.main:main"
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools]
 packages = ["shot_tabular"]
 
