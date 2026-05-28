@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: shot-tabular
+message: >-
+  If you use this software, please cite it using the metadata
+  from this file.
+type: software
+authors:
+  - given-names: Samuel
+    family-names: Jackson
+    email: samuel.jackson@ukaea.uk
+version: 0.1.0
+date-released: "2026-05-28"
+license: MIT
+repository-code: https://github.com/samueljackson92/shot-tabular
+abstract: >-
+  A command-line tool for building per-shot tabular datasets
+  from shot-based time series signals. Loads one or more
+  signals per shot via UDA or SAL backends, interpolates them
+  onto a shared time base, and writes one Parquet file per shot.
+keywords:
+  - fusion
+  - plasma physics
+  - tabular data
+  - parquet
+  - time series
