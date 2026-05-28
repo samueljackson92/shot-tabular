@@ -1,7 +1,7 @@
 """Backend implementations for shot_tabular."""
 
 from abc import ABC, abstractmethod
-from typing import Type, Dict
+
 import xarray as xr
 
 
@@ -17,9 +17,9 @@ class BackendRegistry:
     """Registry for backend implementations."""
 
     def __init__(self):
-        self._backends: Dict[str, Type[Backend]] = {}
+        self._backends: dict[str, type[Backend]] = {}
 
-    def register(self, name: str, backend_class: Type[Backend]) -> None:
+    def register(self, name: str, backend_class: type[Backend]) -> None:
         """Register a backend class with a given name."""
         if not issubclass(backend_class, Backend):
             raise TypeError(f"{backend_class} must be a subclass of Backend")

@@ -4,25 +4,25 @@ and saving them in a standardized format. Supports parallel processing of shots
 and flexible time alignment of signals.
 """
 
-import sys
 import argparse
 import multiprocessing as mp
-from typing import Literal
+import sys
 from functools import partial
 from pathlib import Path
+from typing import Literal
 
+import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pandas as pd
-import numpy as np
 from pydantic import BaseModel
 from rich.console import Console
 from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
     Progress,
     SpinnerColumn,
     TextColumn,
-    BarColumn,
-    MofNCompleteColumn,
     TimeElapsedColumn,
 )
 from rich.table import Table
@@ -44,18 +44,18 @@ class TimeSettings(BaseModel):
 def process_signal(
     shot: int,
     signals: dict[str, str],
-    transport: str,
-    output_file: Path,
+    backend: str,
+    output_folder: Path,
     time_settings: TimeSettings,
 ) -> tuple[int, str]:
     """Process signals for a single shot and save the results to a Parquet file."""
-    backend = registry.get(transport)
+    backend_impl = registry.get(backend)
     variables = {}
     errors = []
 
     for alias, signal in signals.items():
         try:
-            ds = backend.get(shot=shot, signal=signal)
+            ds = backend_impl.get(shot=shot, signal=signal)
         except Exception as e:
             errors.append(f"Error loading signal {signal}: {e}")
             continue
@@ -105,7 +105,7 @@ def process_signal(
 
     try:
         table = pa.Table.from_pandas(df, schema=schema)
-        pq.write_table(table, output_file / f"{shot}.parquet")
+        pq.write_table(table, output_folder / f"{shot}.parquet")
         if errors:
             return shot, f"Partial success with warnings: {'; '.join(errors)}"
         return shot, ""
@@ -203,18 +203,18 @@ def main():
     )
 
     parser.add_argument(
-        "--transport",
+        "--backend",
         type=str,
         choices=["uda", "sal"],
         default="uda",
-        help="Data transport method",
+        help="Data backend method",
     )
     parser.add_argument(
         "-o",
-        "--output-file",
+        "--output-folder",
         type=str,
         default="output",
-        help="Output file path",
+        help="Output folder path",
     )
     parser.add_argument(
         "-n",
@@ -251,19 +251,21 @@ def main():
             shots = pd.read_parquet(shot_file_path).index.values.astype(int).tolist()
         else:
             console.print(
-                "[red]❌ Error: Unsupported shot file format. Use .csv or .parquet[/red]"
+                "[red]❌ Error: Unsupported shot file format. "
+                "Use .csv or .parquet[/red]"
             )
             sys.exit(1)
     elif args.shot_min is not None and args.shot_max is not None:
         shots = list(range(args.shot_min, args.shot_max + 1))
     else:
         console.print(
-            "[red]❌ Error: You must specify either --shots, --shot-file, or both --shot-min and --shot-max[/red]"
+            "[red]❌ Error: You must specify either --shots, --shot-file, "
+            "or both --shot-min and --shot-max[/red]"
         )
         sys.exit(1)
 
-    output_file = Path(args.output_file).expanduser().resolve()
-    output_file.mkdir(parents=True, exist_ok=True)
+    output_folder = Path(args.output_folder).expanduser().resolve()
+    output_folder.mkdir(parents=True, exist_ok=True)
 
     signals = args.signals
     time_settings = TimeSettings(
@@ -275,8 +277,8 @@ def main():
     console.print("[bold cyan]🚀 Starting Shot Tabular Processing[/bold cyan]")
     console.print(f"[dim]Shots to process: {len(shots)}[/dim]")
     console.print(f"[dim]Workers: {args.num_workers}[/dim]")
-    console.print(f"[dim]Transport: {args.transport}[/dim]")
-    console.print(f"[dim]Output directory: {output_file}[/dim]")
+    console.print(f"[dim]Backend: {args.backend}[/dim]")
+    console.print(f"[dim]Output directory: {output_folder}[/dim]")
     console.print()
 
     with mp.Pool(args.num_workers) as pool:
@@ -284,8 +286,8 @@ def main():
             partial(
                 process_signal,
                 signals=signals,
-                transport=args.transport,
-                output_file=output_file,
+                backend=args.backend,
+                output_folder=output_folder,
                 time_settings=time_settings,
             ),
             shots,
@@ -306,7 +308,7 @@ def main():
         )
 
     console.print()
-    console.print(f"[green]💾 Results saved to:[/green] [bold]{output_file}[/bold]")
+    console.print(f"[green]💾 Results saved to:[/green] [bold]{output_folder}[/bold]")
     console.print("[dim]   Format: Parquet[/dim]")
     console.print(f"[dim]   Files: {success_count}[/dim]")
     console.print()

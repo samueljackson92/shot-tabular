@@ -6,10 +6,10 @@ It loads one or more signals for each shot, interpolates them onto a shared time
 
 ## Features
 
-- Load multiple signals per shot using `uda` or `sal` transport
+- Load multiple signals per shot using `uda` or `sal` backend
 - Interpolate each signal to a common time grid
 - Process many shots in parallel with multiprocessing
-- Save one output file per shot as Parquet (`<output-dir>/<shot>.parquet`)
+- Save one output file per shot as Parquet (`<output-folder>/<shot>.parquet`)
 
 ## Installation
 
@@ -55,12 +55,12 @@ st \
 	--shots 12345 12346 \
 	-s ip "AMC_PLASMA CURRENT" \
 	-s ne "ANE_DENSITY" \
-	--transport uda \
+	--backend uda \
 	--tmin 0.0 \
 	--tmax 5.0 \
 	--dt 0.01 \
 	--method nearest \
-	--output-file output
+	--output-folder output
 ```
 
 ### Shot Range Example
@@ -77,7 +77,7 @@ st \
 
 Each successfully processed shot is written to:
 
-- `<output-dir>/<shot>.parquet`
+- `<output-folder>/<shot>.parquet`
 
 Each per-shot table includes:
 
@@ -93,13 +93,33 @@ Columns are ordered as `shot`, `time`, then the successfully loaded signal colum
 - `--shot-file`: CSV/text file of shot numbers (first column)
 - `--shot-min`, `--shot-max`: inclusive shot range
 - `-s`: signal mapping(s), repeatable
-- `--transport`: `uda` or `sal` (default: `uda`)
-- `-o`, `--output-file`: output directory path (default: `output`)
+- `--backend`: `uda` or `sal` (default: `uda`)
+- `-o`, `--output-folder`: output directory path (default: `output`)
 - `-n`, `--num-workers`: worker process count (default: CPU count)
 - `--tmin`: start time (default: `0.0`)
 - `--tmax`: end time (default: signal max time)
 - `--dt`: time step (default: `0.01`)
 - `--method`: interpolation method (`nearest`, `linear`, `cubic`, `zero`, `next`, `previous`)
+
+## Development
+
+### Running the tests
+
+Install dev dependencies (includes pytest) then run the suite:
+
+```bash
+uv sync --group dev
+uv run pytest tests/ -v
+```
+
+Tests mock both `uda` and `sal` backends, so no VPN connection is required.
+
+### Linting
+
+```bash
+uv run ruff check shot_tabular/ tests/
+uv run ty check shot_tabular/ tests/
+```
 
 ## Notes
 
