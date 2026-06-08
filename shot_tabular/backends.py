@@ -46,7 +46,7 @@ class UDABackend(Backend):
     """Backend implementation for UDA."""
 
     def get(self, shot: int, signal: str) -> xr.Dataset:
-        dataset = xr.open_dataset(f"uda://{signal}:{shot}")
+        dataset = xr.open_dataset(f"uda://{signal}:{shot}", engine="uda")
         return dataset
 
 
@@ -54,7 +54,7 @@ class SALBackend(Backend):
     """Backend implementation for SAL."""
 
     def get(self, shot: int, signal: str) -> xr.Dataset:
-        dataset = xr.open_dataset(f"sal://pulse/{shot}/{signal}")
+        dataset = xr.open_dataset(f"sal://pulse/{shot}/{signal}", engine="sal")
         return dataset
 
 
