@@ -1086,7 +1086,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "sal-xarray", specifier = ">=0.2.2" },
-    { name = "uda-xarray", specifier = ">=0.2.3" },
+    { name = "uda-xarray", specifier = ">=0.3.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1201,16 +1201,17 @@ wheels = [
 
 [[package]]
 name = "uda-xarray"
-version = "0.2.3"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "pydantic" },
     { name = "uda" },
     { name = "uda-mast" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/77/72ec47d26ef8e8f409c4e1b7e8cfa3c1ed79da0c14015376cf3e2be7de73/uda_xarray-0.2.3.tar.gz", hash = "sha256:1af47f6171b6f2179da403b10743d653c3c063e7aa5c8d9c42fa95952f58d0dc", size = 7687, upload-time = "2026-03-20T10:37:16.571Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/68/f0654fbb1f7af5a657997c8befd3d37f081f6f2fbaa3ae500daa1ec749d3/uda_xarray-0.3.0.tar.gz", hash = "sha256:bb90682be1409742fc326450bd53720d15c87feeb8062ea213cc0f756175d6fd", size = 12670, upload-time = "2026-06-08T14:35:07.57Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/74/2a80a3d87954364cd6f33c300e5a5968229aeea0e80ea4f502a041910ef1/uda_xarray-0.2.3-py3-none-any.whl", hash = "sha256:96b8742152c97a5682d7bb600ba02309d49b41726e53d6aa8a94deb5d0a46e8e", size = 5621, upload-time = "2026-03-20T10:37:15.176Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/67/8cfdb1d5181865217fd040490a7befb95379231ae2fb5818bbb036f7c3bf/uda_xarray-0.3.0-py3-none-any.whl", hash = "sha256:382b88a9582a8c08c422a227c438a84603389e0686848079a86fa3dc9ff55983", size = 9729, upload-time = "2026-06-08T14:35:06.575Z" },
 ]
 
 [[package]]
