@@ -10,7 +10,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pydantic>=2.12.5",
     "sal-xarray>=0.2.2",
-    "uda-xarray>=0.2.3",
+    "uda-xarray>=0.3.0",
 ]
 
 [project.scripts]
