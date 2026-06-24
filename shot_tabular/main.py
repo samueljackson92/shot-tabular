@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import xarray as xr
 from pydantic import BaseModel
 from rich.console import Console
 from rich.progress import (
@@ -66,10 +67,23 @@ def process_signal(
 
         ds = ds["data"]
         time_vals = ds["time"].values
+        data_vals = ds.values
         sort_idx = np.argsort(time_vals, kind="stable")
-        sorted_times = time_vals[sort_idx]
-        keep_mask = np.concatenate(([True], sorted_times[1:] != sorted_times[:-1]))
-        ds = ds.isel(time=sort_idx[keep_mask])
+        time_sorted = time_vals[sort_idx]
+        data_sorted = data_vals[sort_idx]
+        keep = (
+            ~pd.Index(time_sorted).duplicated(keep="first")
+            & pd.Index(time_sorted).notna()
+        )
+        if not keep.any():
+            errors.append(f"Signal {signal} has no valid time values after cleaning")
+            continue
+        ds = xr.DataArray(
+            data_sorted[keep],
+            coords={"time": time_sorted[keep]},
+            dims=["time"],
+            attrs=ds.attrs,
+        )
         tmax = (
             time_settings.tmax
             if time_settings.tmax is not None
