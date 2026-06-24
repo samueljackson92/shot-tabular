@@ -65,8 +65,11 @@ def process_signal(
             continue
 
         ds = ds["data"]
-        _, unique_idx = np.unique(ds["time"].values, return_index=True)
-        ds = ds.isel(time=unique_idx)
+        time_vals = ds["time"].values
+        sort_idx = np.argsort(time_vals, kind="stable")
+        sorted_times = time_vals[sort_idx]
+        keep_mask = np.concatenate(([True], sorted_times[1:] != sorted_times[:-1]))
+        ds = ds.isel(time=sort_idx[keep_mask])
         tmax = (
             time_settings.tmax
             if time_settings.tmax is not None
